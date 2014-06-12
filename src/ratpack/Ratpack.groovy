@@ -1,3 +1,4 @@
+import groovy.sql.Sql
 import ratpack.groovy.sql.SqlModule
 import ratpack.hikari.HikariModule
 import ratpack.hyunlabs.KPIModule
@@ -9,17 +10,24 @@ import static ratpack.groovy.Groovy.ratpack
 ratpack {
 
  bindings {
-     add new HikariModule([URL: "jdbc:mysql://localhost/db", username: 'user', password: 'pass'], "com.mysql.jdbc.jdbc2.optional.MysqlDataSource")
-//     add new HikariModule([URL: "jdbc:h2:mem:dev;INIT=CREATE SCHEMA IF NOT EXISTS DEV"], "org.h2.jdbcx.JdbcDataSource")
-     add new SqlModule()
+     add new SqlModule(),
+             new HikariModule('com.mysql.jdbc.jdbc2.optional.MysqlDataSource', URL: "jdbc:mysql://localhost/db", user: 'user', password: 'pass')
+//     add new HikariModule('org.h2.jdbcx.JdbcDataSource', URL: "jdbc:h2:mem:dev;INIT=CREATE SCHEMA IF NOT EXISTS DEV")
+
      add new KPIModule()
  }
 
   handlers {
     get { KPIService kpiService ->
-      render groovyTemplate("index.html", title: "My Ratpack App", list: kpiService.getKpi('hi'))
+        def list = kpiService.getKpi('table_name')
+      render groovyTemplate("index.html", title: "KPI Dashboard", list: list)
     }
-        
+
+    get("db") { Sql sql ->
+      def schemas = sql.rows("show schemas")
+      render schemas?.join(', ')
+    }
+
     assets "public"
   }
 }
